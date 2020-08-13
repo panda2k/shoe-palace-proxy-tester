@@ -1,5 +1,5 @@
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, WebDriverException
 from selenium.webdriver.firefox.options import Options
 import pandas as pd
 from datetime import datetime
@@ -8,6 +8,7 @@ import time
 
 DRIVER_PATH = os.path.join(os.getcwd(), 'utils\\geckodriver.exe')
 PROXY_LIST = os.path.join(os.getcwd(), 'utils\\proxylist.txt')
+#PROXY_LIST = os.path.join(os.getcwd(), 'utils\\minitests.txt')
 TEST_PATH = os.path.join(os.getcwd(), 'tests\\' + datetime.now().strftime('%Y:%m:%d:%H:%M:%S').replace(':', '-') + '.csv')
 
 def proxy_driver(proxy): 
@@ -35,14 +36,21 @@ def main():
 
     for proxy in proxies:
         driver = proxy_driver(proxy)
-        driver.get('https://www.shoepalace.com/')
         test_data['proxy'].append(proxy)
         try:
-            driver.find_element_by_id('cf-wrapper')
-            test_data['result'].append('Bad')
-        except NoSuchElementException:
-            test_data['result'].append('Good')
-        
+            driver.get('https://www.shoepalace.com/')
+            try:
+                driver.find_element_by_id('cf-wrapper')
+                test_data['result'].append('Bad')
+            except NoSuchElementException:
+                test_data['result'].append('Good')
+        except WebDriverException as e:
+            if 'proxyConnectFailure'in str(e):
+                test_data['result'].append('Dead')
+            else:
+                test_data['result'].append('Unknown')
+
+        time.sleep(1)
         driver.quit()
     
     dataframe = pd.DataFrame(test_data)
