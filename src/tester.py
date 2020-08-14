@@ -15,8 +15,10 @@ PROXY_LIST = os.path.join(os.getcwd(), 'utils\\proxylist.txt')
 
 def get_driver(proxy = None): 
     options = Options()
-    #options.headless = True TODO: Figure out a headless implementation
-    return webdriver.Firefox(executable_path = DRIVER_PATH, options = options)
+    profile = webdriver.FirefoxProfile()
+    profile.set_preference("general.useragent.override", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:79.0) Gecko/20100101 Firefox/79.0")
+    options.headless = True
+    return webdriver.Firefox(executable_path = DRIVER_PATH, options = options, firefox_profile = profile)
 
 def change_proxy(driver, proxy):
     with driver.context(driver.CONTEXT_CHROME):
