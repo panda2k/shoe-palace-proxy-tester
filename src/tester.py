@@ -16,6 +16,10 @@ def get_driver(proxy = None):
     options = Options()
     profile = webdriver.FirefoxProfile()
     profile.set_preference("general.useragent.override", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:79.0) Gecko/20100101 Firefox/79.0")
+    profile.set_preference("browser.cache.disk.enable", False)
+    profile.set_preference("browser.cache.memory.enable", False)
+    profile.set_preference("browser.cache.offline.enable", False)
+    profile.set_preference("network.http.use-cache", False)
     options.headless = True
     return webdriver.Firefox(executable_path = DRIVER_PATH, options = options, firefox_profile = profile)
 
@@ -59,7 +63,6 @@ def test_proxies(output_path, thread_name):
             test_data['proxy'].append(proxy)
             try:
                 driver.get('https://www.shoepalace.com/')
-                #driver.save_screenshot(f'{proxy.split(":")[1]}.png') optional debug
             except WebDriverException as e:
                 if 'proxyConnectFailure'in str(e):
                     test_data['result'].append('Dead')
@@ -75,6 +78,7 @@ def test_proxies(output_path, thread_name):
                         test_data['result'].append('Bad')
                     except NoSuchElementException:
                         test_data['result'].append('Good')
+                        #driver.save_screenshot(f'{proxy.split(":")[1]}.png') # optional debug
     
             dataframe = pd.DataFrame(test_data)
             dataframe.to_csv(output_path, index = False, mode = 'a', header = False)
@@ -86,8 +90,13 @@ def main():
     proxies = chain(load_proxies())
     TEST_PATH = os.path.join(os.getcwd(), 'tests\\' + datetime.now().strftime('%Y:%m:%d:%H:%M:%S').replace(':', '-') + '.csv')
     with concurrent.futures.ThreadPoolExecutor(max_workers = 7) as executor:
+        futures = []
         for index in range(7):
-            executor.submit(test_proxies, TEST_PATH, index)
+            futures.append(executor.submit(test_proxies, TEST_PATH, index))
+    for future in futures:
+        print(future.result())
+        
+    print('All threads exited. Stopping program')
 
 
 if __name__ == "__main__":
