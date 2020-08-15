@@ -5,7 +5,6 @@ import pandas as pd
 from datetime import datetime
 from itertools import chain
 import concurrent.futures
-import random
 import string
 import os
 import time
@@ -45,6 +44,7 @@ def test_proxies(output_path, thread_name):
         try:
             proxy = next(proxies)
             print(f'Thread {str(thread_name)} is now testing {proxy}')
+            start_time = time.time()
         except StopIteration:
             print(f'Thread {str(thread_name)} is done testing proxies')
             driver.quit()
@@ -59,6 +59,7 @@ def test_proxies(output_path, thread_name):
             test_data['proxy'].append(proxy)
             try:
                 driver.get('https://www.shoepalace.com/')
+                #driver.save_screenshot(f'{proxy.split(":")[1]}.png') optional debug
             except WebDriverException as e:
                 if 'proxyConnectFailure'in str(e):
                     test_data['result'].append('Dead')
@@ -76,16 +77,16 @@ def test_proxies(output_path, thread_name):
                         test_data['result'].append('Good')
     
             dataframe = pd.DataFrame(test_data)
-            dataframe.to_csv(output_path, index = False, mode = 'a')
-            print(f'Thread {str(thread_name)} has finished testing {proxy}')
+            dataframe.to_csv(output_path, index = False, mode = 'a', header = False)
+            print(f'Thread {str(thread_name)} has finished testing {proxy}. Results of test: {test_data["result"][-1]}. Took {round(time.time() - start_time, 3)} seconds.')
             time.sleep(5)
 
 def main():
     global proxies
     proxies = chain(load_proxies())
     TEST_PATH = os.path.join(os.getcwd(), 'tests\\' + datetime.now().strftime('%Y:%m:%d:%H:%M:%S').replace(':', '-') + '.csv')
-    with concurrent.futures.ThreadPoolExecutor(max_workers = 3) as executor:
-        for index in range(3):
+    with concurrent.futures.ThreadPoolExecutor(max_workers = 7) as executor:
+        for index in range(7):
             executor.submit(test_proxies, TEST_PATH, index)
 
 
