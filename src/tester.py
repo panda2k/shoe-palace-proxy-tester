@@ -46,7 +46,7 @@ def log_to_file(log_file_path, message):
     
     return
 
-def test_proxies(output_path, thread_name):
+def test_proxies(output_path, thread_name, log_path):
     print(f'Thread {str(thread_name)} started')
     driver = get_driver()
     print(f'Thread {str(thread_name)} got driver')
@@ -70,12 +70,16 @@ def test_proxies(output_path, thread_name):
             try:
                 driver.get('https://www.shoepalace.com/')
             except WebDriverException as e:
-                if 'proxyConnectFailure'in str(e):
+                if 'proxyConnectFailure' in str(e):
+                    test_data['result'].append('Dead')
+                elif 'about:neterror' in str(e):
+                    test_data['result'].append('Dead')
+                elif 'Timeout' in str(e):
                     test_data['result'].append('Dead')
                 else:
                     test_data['result'].append('Unknown')
-                    driver.save_screenshot(f'{proxy.split(":")[1]}.png') # optional debug
-                    log_to_file(os.path.join(os.getcwd(), f'logs\\{proxy.split(":")[1]}.txt'), str(e)) # optional debut
+                    driver.save_screenshot(os.path.join(os.getcwd(), f'logs\\{proxy.split(":")[1]}.png')) # optional debug
+                    log_to_file(log_path, 'Proxy {}: {}'.format(proxy.split(":")[1], str(e))) # optional debug
             else:
                 try:
                     if '501 Backend Timeout' in driver.page_source:
@@ -97,10 +101,11 @@ def main():
     global proxies
     proxies = chain(load_proxies())
     TEST_PATH = os.path.join(os.getcwd(), 'tests\\' + datetime.now().strftime('%Y:%m:%d:%H:%M:%S').replace(':', '-') + '.csv')
+    LOG_PATH = os.path.join(os.getcwd(), f"logs\\{datetime.now().strftime('%Y:%m:%d:%H:%M:%S').replace(':', '-') + '.txt'}")
     with concurrent.futures.ThreadPoolExecutor(max_workers = 7) as executor:
         futures = []
         for index in range(7):
-            futures.append(executor.submit(test_proxies, TEST_PATH, index))
+            futures.append(executor.submit(test_proxies, TEST_PATH, index, LOG_PATH))
     for future in futures:
         print(future.result())
         
