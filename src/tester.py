@@ -20,6 +20,7 @@ def get_driver(proxy = None):
     profile.set_preference("browser.cache.memory.enable", False)
     profile.set_preference("browser.cache.offline.enable", False)
     profile.set_preference("network.http.use-cache", False)
+    profile.set_preference("permissions.default.image", 2)
     options.headless = True
     return webdriver.Firefox(executable_path = DRIVER_PATH, options = options, firefox_profile = profile)
 
@@ -56,9 +57,8 @@ def test_proxies(output_path, thread_name, log_path):
             print(f'Thread {str(thread_name)} is now testing {proxy}')
             start_time = time.time()
         except StopIteration:
-            print(f'Thread {str(thread_name)} is done testing proxies')
             driver.quit()
-            return
+            return f'Thread {str(thread_name)} is done testing proxies'
         else:
             change_proxy(driver, proxy)
             driver.delete_all_cookies()
@@ -102,9 +102,11 @@ def main():
     proxies = chain(load_proxies())
     TEST_PATH = os.path.join(os.getcwd(), 'tests\\' + datetime.now().strftime('%Y:%m:%d:%H:%M:%S').replace(':', '-') + '.csv')
     LOG_PATH = os.path.join(os.getcwd(), f"logs\\{datetime.now().strftime('%Y:%m:%d:%H:%M:%S').replace(':', '-') + '.txt'}")
-    with concurrent.futures.ThreadPoolExecutor(max_workers = 7) as executor:
+    thread_count = int(input("How many threads would you like to run? "))
+    
+    with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = []
-        for index in range(7):
+        for index in range(thread_count):
             futures.append(executor.submit(test_proxies, TEST_PATH, index, LOG_PATH))
     for future in futures:
         print(future.result())
